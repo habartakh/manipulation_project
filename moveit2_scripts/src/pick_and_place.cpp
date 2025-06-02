@@ -85,16 +85,26 @@ public:
     RCLCPP_INFO(LOGGER, "Planning and Executing Pick And Place Trajectory...");
 
     // First, close the gripper
-    close_gripper();
-    
+    close_gripper(+0.700);
+
     // Then move to the pregrasp position
     go_to_pregrasp_position();
-    
-    // Open the gripper to prepare for grasping the object
-    open_gripper();
 
-    // wait for few seconds
-    // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    // wait one second
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+    // Open the gripper to prepare for grasping the object
+    open_gripper(+0.200);
+
+    // wait one second
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+    // Move down even closer to the object
+    approach_object();
+
+    // Then, close the gripper
+    close_gripper(+0.630);
+
     RCLCPP_INFO(LOGGER, "Pick And Place Trajectory Execution Complete");
   }
 
@@ -264,12 +274,12 @@ private:
     execute_trajectory_kinematics();
   }
 
-  void open_gripper() {
+  void open_gripper(double gripper_joint_value) {
     // open the gripper
     RCLCPP_INFO(LOGGER, "Opening Gripper...");
     // setup the gripper target by pose name
     RCLCPP_INFO(LOGGER, "Preparing Gripper Value...");
-    setup_joint_value_gripper(+0.000);
+    setup_joint_value_gripper(gripper_joint_value);
     // plan and execute the trajectory
     RCLCPP_INFO(LOGGER, "Planning Gripper Action...");
     plan_trajectory_gripper();
@@ -278,12 +288,12 @@ private:
     RCLCPP_INFO(LOGGER, "Gripper Opened");
   }
 
-  void close_gripper() {
+  void close_gripper(double gripper_joint_value) {
     // close the gripper
     RCLCPP_INFO(LOGGER, "Closing Gripper...");
     // setup the gripper joint value
     RCLCPP_INFO(LOGGER, "Preparing Gripper Value...");
-    setup_joint_value_gripper(+0.500);
+    setup_joint_value_gripper(gripper_joint_value);
     // plan and execute the trajectory
     RCLCPP_INFO(LOGGER, "Planning Gripper Action...");
     plan_trajectory_gripper();
@@ -296,7 +306,7 @@ private:
     RCLCPP_INFO(LOGGER, "Approaching...");
     // setup the cartesian target
     RCLCPP_INFO(LOGGER, "Preparing Cartesian Trajectory...");
-    setup_waypoints_target(+0.000, +0.000, -0.060);
+    setup_waypoints_target(+0.000, +0.000, -0.070);
     // plan and execute the trajectory
     RCLCPP_INFO(LOGGER, "Planning Cartesian Trajectory...");
     plan_trajectory_cartesian();
