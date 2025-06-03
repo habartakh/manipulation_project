@@ -68,6 +68,11 @@ public:
     initial_state_gripper_->copyJointGroupPositions(
         joint_model_group_gripper_, joint_group_positions_gripper_);
 
+    // Store the initial joints positions to use later to make the robot return
+    // to its initial position at the end of the pick and place sequence
+    initial_joint_group_positions_robot_ = joint_group_positions_robot_;
+    initial_joint_group_positions_gripper_ = joint_group_positions_gripper_;
+
     // set start state of robot and gripper to current state
     move_group_robot_->setStartStateToCurrentState();
     move_group_gripper_->setStartStateToCurrentState();
@@ -117,6 +122,9 @@ public:
     // And release the object
     open_gripper(+0.200);
 
+    // After finishing the task, return to the original position
+    return_to_initial_position();
+
     RCLCPP_INFO(LOGGER, "Pick And Place Trajectory Execution Complete");
   }
 
@@ -148,12 +156,14 @@ private:
 
   // declare trajectory planning variables for robot and gripper
   std::vector<double> joint_group_positions_robot_;
+  std::vector<double> initial_joint_group_positions_robot_;
   RobotStatePtr current_state_robot_;
   RobotStatePtr initial_state_robot_;
   Plan kinematics_trajectory_plan_;
   Pose target_pose_robot_;
   bool plan_success_robot_ = false;
   std::vector<double> joint_group_positions_gripper_;
+  std::vector<double> initial_joint_group_positions_gripper_;
   RobotStatePtr current_state_gripper_;
   RobotStatePtr initial_state_gripper_;
   Plan gripper_trajectory_plan_;
@@ -377,14 +387,32 @@ private:
     // setup the joint value target
     RCLCPP_INFO(LOGGER, "Preparing Joint Value Trajectory...");
     setup_joint_value_target(
-        +2.35, joint_group_positions_robot_[1],
-        joint_group_positions_robot_[2], joint_group_positions_robot_[3],
-        joint_group_positions_robot_[4], joint_group_positions_robot_[5]);
+        +2.35, joint_group_positions_robot_[1], joint_group_positions_robot_[2],
+        joint_group_positions_robot_[3], joint_group_positions_robot_[4],
+        joint_group_positions_robot_[5]);
     // plan and execute the trajectory
     RCLCPP_INFO(LOGGER, "Planning Joint Value Trajectory...");
     plan_trajectory_kinematics();
     RCLCPP_INFO(LOGGER, "Executing Joint Value Trajectory...");
     execute_trajectory_kinematics();
+  }
+
+  void return_to_initial_position() {
+
+    // Return to the initial state of the robot
+    move_group_robot_->setJointValueTarget(
+        initial_joint_group_positions_robot_);
+
+    RCLCPP_INFO(LOGGER, "Planning return to the initial pose...");
+    plan_trajectory_kinematics();
+    RCLCPP_INFO(LOGGER, "Executing return to the initial pose...");
+    execute_trajectory_kinematics();
+
+    // Then set the gripper to its initial position
+    move_group_gripper_->setJointValueTarget(
+        initial_joint_group_positions_gripper_);
+    plan_trajectory_gripper();
+    execute_trajectory_gripper();
   }
 
 }; // class PickAndPlaceTrajectory
