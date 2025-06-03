@@ -111,6 +111,12 @@ public:
     // Move back up while carrying the object
     retreat();
 
+    // Turn the shoulder joint to go to the loading position
+    turn_shoulder_180();
+
+    // And release the object
+    open_gripper(+0.200);
+
     RCLCPP_INFO(LOGGER, "Pick And Place Trajectory Execution Complete");
   }
 
@@ -371,7 +377,7 @@ private:
     // setup the joint value target
     RCLCPP_INFO(LOGGER, "Preparing Joint Value Trajectory...");
     setup_joint_value_target(
-        +1.5708, joint_group_positions_robot_[1],
+        +2.35, joint_group_positions_robot_[1],
         joint_group_positions_robot_[2], joint_group_positions_robot_[3],
         joint_group_positions_robot_[4], joint_group_positions_robot_[5]);
     // plan and execute the trajectory
