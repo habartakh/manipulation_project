@@ -90,7 +90,7 @@ public:
     RCLCPP_INFO(LOGGER, "Planning and Executing Pick And Place Trajectory...");
 
     // First, close the gripper
-    close_gripper(+0.700);
+    set_gripper_value(+0.700);
 
     // Then move to the pregrasp position
     go_to_pregrasp_position();
@@ -99,7 +99,7 @@ public:
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     // Open the gripper to prepare for grasping the object
-    open_gripper(+0.200);
+    set_gripper_value(+0.200);
 
     // wait one second
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -120,7 +120,7 @@ public:
     turn_shoulder_180();
 
     // And release the object
-    open_gripper(+0.200);
+    set_gripper_value(+0.200);
 
     // After finishing the task, return to the original position
     return_to_initial_position();
@@ -286,56 +286,32 @@ private:
 
     RCLCPP_INFO(LOGGER, "Going to Pregrasp Position...");
     // setup the goal pose target
-    RCLCPP_INFO(LOGGER, "Preparing Pregrasp Goal Pose Trajectory...");
-
     // Best coordinates for pregrasp, adjusted through Gazebo and RVIZ
     setup_goal_pose_target(+0.3385, -0.020, +0.250, -1.000, 0.000, 0.000,
                            0.000);
 
     // plan and execute the trajectory
-    RCLCPP_INFO(LOGGER, "Planning Pregrasp Goal Pose Trajectory...");
     plan_trajectory_kinematics();
-    RCLCPP_INFO(LOGGER, "Executing Pregrasp Goal Pose Trajectory...");
     execute_trajectory_kinematics();
   }
 
-  void open_gripper(double gripper_joint_value) {
+  void set_gripper_value(double gripper_joint_value) {
     // open the gripper
-    RCLCPP_INFO(LOGGER, "Opening Gripper...");
+    RCLCPP_INFO(LOGGER, "Set Gripper joint value...");
     // setup the gripper target by pose name
-    RCLCPP_INFO(LOGGER, "Preparing Gripper Value...");
     setup_joint_value_gripper(gripper_joint_value);
     // plan and execute the trajectory
-    RCLCPP_INFO(LOGGER, "Planning Gripper Action...");
     plan_trajectory_gripper();
-    RCLCPP_INFO(LOGGER, "Executing Gripper Action...");
     execute_trajectory_gripper();
-    RCLCPP_INFO(LOGGER, "Gripper Opened");
   }
 
-  void close_gripper(double gripper_joint_value) {
-    // close the gripper
-    // RCLCPP_INFO(LOGGER, "Closing Gripper...");
-    // setup the gripper joint value
-    // RCLCPP_INFO(LOGGER, "Preparing Gripper Value...");
-    setup_joint_value_gripper(gripper_joint_value);
-    // plan and execute the trajectory
-    // RCLCPP_INFO(LOGGER, "Planning Gripper Action...");
-    plan_trajectory_gripper();
-    // RCLCPP_INFO(LOGGER, "Executing Gripper Action...");
-    execute_trajectory_gripper();
-    // RCLCPP_INFO(LOGGER, "Gripper Closed");
-  }
 
   void approach_object() {
     RCLCPP_INFO(LOGGER, "Approaching...");
     // setup the cartesian target
-    RCLCPP_INFO(LOGGER, "Preparing Cartesian Trajectory...");
     setup_waypoints_target(+0.000, +0.000, -0.085);
     // plan and execute the trajectory
-    RCLCPP_INFO(LOGGER, "Planning Cartesian Trajectory...");
     plan_trajectory_cartesian();
-    RCLCPP_INFO(LOGGER, "Executing Cartesian Trajectory...");
     execute_trajectory_cartesian();
   }
 
@@ -348,20 +324,20 @@ private:
     // Then, close gradually the gripper
     // If the movement is too sudden, the object falls
     for (int i = 0; i < 3; ++i) {
-      close_gripper(gripper_value);
+      set_gripper_value(gripper_value);
       std::this_thread::sleep_for(std::chrono::milliseconds(2000));
       gripper_value += 0.010;
     }
 
     // Finetune the gripper joint values even further
-    for (int i = 0; i < 4; ++i) {
+    for (int i = 0; i < 3; ++i) {
 
       gripper_value += 0.001;
       std::cout << "####################################" << std::endl;
       std::cout << "NOW IS THE ST TIME :" << gripper_value << std::endl;
       std::cout << "####################################" << std::endl;
 
-      close_gripper(gripper_value);
+      set_gripper_value(gripper_value);
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
   }
@@ -369,12 +345,9 @@ private:
   void retreat() {
     RCLCPP_INFO(LOGGER, "Retreating...");
     // setup the cartesian target
-    RCLCPP_INFO(LOGGER, "Preparing Cartesian Trajectory...");
     setup_waypoints_target(+0.000, +0.000, +0.070);
     // plan and execute the trajectory
-    RCLCPP_INFO(LOGGER, "Planning Cartesian Trajectory...");
     plan_trajectory_cartesian();
-    RCLCPP_INFO(LOGGER, "Executing Cartesian Trajectory...");
     execute_trajectory_cartesian();
   }
 
@@ -385,27 +358,24 @@ private:
     current_state_robot_->copyJointGroupPositions(joint_model_group_robot_,
                                                   joint_group_positions_robot_);
     // setup the joint value target
-    RCLCPP_INFO(LOGGER, "Preparing Joint Value Trajectory...");
     setup_joint_value_target(
         +2.35, joint_group_positions_robot_[1], joint_group_positions_robot_[2],
         joint_group_positions_robot_[3], joint_group_positions_robot_[4],
         joint_group_positions_robot_[5]);
     // plan and execute the trajectory
-    RCLCPP_INFO(LOGGER, "Planning Joint Value Trajectory...");
     plan_trajectory_kinematics();
-    RCLCPP_INFO(LOGGER, "Executing Joint Value Trajectory...");
     execute_trajectory_kinematics();
   }
 
   void return_to_initial_position() {
+    
+    RCLCPP_INFO(LOGGER, "Returning to the initial pose...");
 
     // Return to the initial state of the robot
     move_group_robot_->setJointValueTarget(
         initial_joint_group_positions_robot_);
 
-    RCLCPP_INFO(LOGGER, "Planning return to the initial pose...");
     plan_trajectory_kinematics();
-    RCLCPP_INFO(LOGGER, "Executing return to the initial pose...");
     execute_trajectory_kinematics();
 
     // Then set the gripper to its initial position
