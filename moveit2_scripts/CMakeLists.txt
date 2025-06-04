@@ -30,7 +30,7 @@ if(BUILD_TESTING)
 endif()
 
 
-# object detection node executables and dependencies 
+# simulation object detection node executables and dependencies 
 add_executable(pick_and_place src/pick_and_place.cpp)
 target_include_directories(pick_and_place PUBLIC include)
 ament_target_dependencies(pick_and_place 
@@ -44,8 +44,23 @@ ament_target_dependencies(pick_and_place
     control_msgs
 )
 
+# Real object detection node executables and dependencies 
+add_executable(pick_and_place_real src/pick_and_place_real.cpp)
+target_include_directories(pick_and_place_real PUBLIC include)
+ament_target_dependencies(pick_and_place_real 
+    ament_cmake
+    rclcpp
+    rclcpp_action
+    moveit_core
+    moveit_ros_planning_interface
+    interactive_markers
+    moveit_ros_planning
+    control_msgs
+)
+
 install(TARGETS
    pick_and_place
+   pick_and_place_real
    DESTINATION lib/${PROJECT_NAME}
 )
 
