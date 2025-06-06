@@ -32,5 +32,16 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   DEPENDENCIES geometry_msgs
 )
 
+# add the python scripts 
+install(PROGRAMS
+  scripts/static_tf_publisher.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# install the launch files
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
+)
  
 ament_package()

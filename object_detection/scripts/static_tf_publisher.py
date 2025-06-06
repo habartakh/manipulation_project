@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import rclpy
 from geometry_msgs.msg import TransformStamped
 import tf2_ros
@@ -9,7 +11,7 @@ class StaticTransformPublisher:
         self.node = rclpy.create_node('static_transform_publisher_node')
         self.broadcaster = tf2_ros.StaticTransformBroadcaster(self.node)
 
-    # The tf values are obtained by running 
+    # The tf values are obtained by running :
     # ros2 run tf2_ros tf2_echo base_link wrist_rgbd_camera_depth_optical_frame
     def publish_static_transform(self) -> None:
         static_transform_stamped = TransformStamped()
