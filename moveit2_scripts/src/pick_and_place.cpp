@@ -359,7 +359,7 @@ private:
                                                   joint_group_positions_robot_);
     // setup the joint value target
     setup_joint_value_target(
-        +2.35, joint_group_positions_robot_[1], joint_group_positions_robot_[2],
+        +3.14, joint_group_positions_robot_[1], joint_group_positions_robot_[2],
         joint_group_positions_robot_[3], joint_group_positions_robot_[4],
         joint_group_positions_robot_[5]);
     // plan and execute the trajectory
