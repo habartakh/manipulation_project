@@ -16,6 +16,8 @@ find_package(interactive_markers REQUIRED)
 find_package(geometric_shapes REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(moveit_msgs REQUIRED)
+find_package(object_detection REQUIRED)
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -30,7 +32,7 @@ if(BUILD_TESTING)
 endif()
 
 
-# simulation object detection node executables and dependencies 
+# simulation pick and place node executables and dependencies 
 add_executable(pick_and_place src/pick_and_place.cpp)
 target_include_directories(pick_and_place PUBLIC include)
 ament_target_dependencies(pick_and_place 
@@ -44,7 +46,7 @@ ament_target_dependencies(pick_and_place
     control_msgs
 )
 
-# Real object detection node executables and dependencies 
+# Real object pick and place node executables and dependencies 
 add_executable(pick_and_place_real src/pick_and_place_real.cpp)
 target_include_directories(pick_and_place_real PUBLIC include)
 ament_target_dependencies(pick_and_place_real 
@@ -58,9 +60,25 @@ ament_target_dependencies(pick_and_place_real
     control_msgs
 )
 
+# Simulation object detection with perception node executables and dependencies 
+add_executable(pick_and_place_perception src/pick_and_place_perception.cpp)
+target_include_directories(pick_and_place_perception PUBLIC include)
+ament_target_dependencies(pick_and_place_perception 
+    ament_cmake
+    rclcpp
+    rclcpp_action
+    moveit_core
+    moveit_ros_planning_interface
+    interactive_markers
+    moveit_ros_planning
+    control_msgs
+	object_detection
+)
+
 install(TARGETS
    pick_and_place
    pick_and_place_real
+   pick_and_place_perception
    DESTINATION lib/${PROJECT_NAME}
 )
 
