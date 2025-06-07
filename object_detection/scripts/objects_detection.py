@@ -266,7 +266,6 @@ class ObjectDetection(Node):
     def pub_object_marker(self, object_centroids: List[List[float]], object_dimensions: List[List[float]]) -> None:
         """Publishes objects on flat surfaces as markers"""
         marker_array = MarkerArray()
-        offset_x = 0.05
 
         for idx, (centroid, dimensions) in enumerate(zip(object_centroids, object_dimensions)):
 
@@ -275,7 +274,7 @@ class ObjectDetection(Node):
             marker.id = idx
             marker.type = Marker.CUBE
             marker.action = Marker.ADD
-            marker.pose.position.x = float(centroid[0]) + offset_x
+            marker.pose.position.x = float(centroid[0]) 
             marker.pose.position.y = float(centroid[1])
             marker.pose.position.z = float(centroid[2])
             marker.pose.orientation.w = 1.0
