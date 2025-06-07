@@ -47,7 +47,7 @@ class ObjectDetection(Node):
             cloud = self.from_ros_msg(msg)
 
             # Filtered cloud for surface detection
-            filtered_cloud_plane = self.filter_cloud(cloud, max_x_dist=2.15, min_height=0.0, max_height=0.04)
+            filtered_cloud_plane = self.filter_cloud(cloud, max_x_dist=2.15, min_height=-0.04, max_height=0.04)
             # Filtered cloud for object detection
             filtered_cloud_objects = self.filter_cloud(cloud, max_x_dist=2.15, min_height=0.0, max_height=0.10)
 
@@ -219,7 +219,7 @@ class ObjectDetection(Node):
     def pub_surface_marker(self, surface_centroids: List[List[float]], surface_dimensions: List[List[float]]) -> None:
         """Publishes the detected table plane as cube markers"""
         marker_array = MarkerArray()
-        surface_thickness = 0.05
+        surface_thickness = 0.03
 
         for idx, (centroid, dimensions) in enumerate(zip(surface_centroids, surface_dimensions)):
             length = float(dimensions[0])
