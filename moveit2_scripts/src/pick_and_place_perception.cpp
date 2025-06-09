@@ -4,9 +4,12 @@
 #include <moveit_msgs/msg/display_robot_state.hpp>
 #include <moveit_msgs/msg/display_trajectory.hpp>
 
+#include "geometry_msgs/msg/point.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp/wait_for_message.hpp"
 #include <chrono>
 #include <cmath>
+#include <future>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -36,6 +39,7 @@ public:
     object_pose_sub = object_pose_node->create_subscription<DetectedObjects>(
         "object_detected", 10,
         std::bind(&PickAndPlaceTrajectory::topic_callback, this, _1));
+    object_pose_future_ = object_pose_promise_.get_future();
     executor_.add_node(object_pose_node);
 
     // initialize move_group node
@@ -43,7 +47,12 @@ public:
         rclcpp::Node::make_shared("move_group_node", node_options);
     // start move_group node in a new executor thread and spin it
     executor_.add_node(move_group_node_);
-    std::thread([this]() { this->executor_.spin(); }).detach();
+    std::thread([this]() {
+      //   executor_.add_node(object_pose_node);
+      //   executor_.add_node(move_group_node_);
+
+      this->executor_.spin();
+    }).detach();
 
     // initialize move_group interfaces
     move_group_robot_ = std::make_shared<MoveGroupInterface>(
@@ -100,6 +109,15 @@ public:
 
   void execute_trajectory_plan() {
     RCLCPP_INFO(LOGGER, "Planning and Executing Pick And Place Trajectory...");
+
+    // wait till we get detected object position from the topic
+    RCLCPP_INFO(LOGGER, "Waiting for object pose...");
+
+    auto status = object_pose_future_.wait_for(std::chrono::seconds(5));
+    if (status != std::future_status::ready) {
+      RCLCPP_ERROR(LOGGER, "Timeout while waiting for object pose!");
+      return;
+    }
 
     // First, close the gripper
     set_gripper_value(+0.700);
@@ -160,8 +178,12 @@ private:
   rclcpp::Node::SharedPtr object_pose_node;
   rclcpp::Subscription<DetectedObjects>::SharedPtr object_pose_sub;
 
-  // declare multi threaded executor for move_group node
-  rclcpp::executors::MultiThreadedExecutor executor_;
+  // Get the object detected position asynchronously with future object
+  std::promise<DetectedObjects> object_pose_promise_;
+  std::future<DetectedObjects> object_pose_future_;
+
+  // declare Single threaded executor for move_group node
+  rclcpp::executors::SingleThreadedExecutor executor_;
 
   // declare move_group_interface variables for robot and gripper
   std::shared_ptr<MoveGroupInterface> move_group_robot_;
@@ -192,6 +214,9 @@ private:
   const double jump_threshold_ = 0.0;
   const double end_effector_step_ = 0.01;
   double plan_fraction_robot_ = 0.0;
+
+  // initial position of the robot in reference to base_link of the arm
+  geometry_msgs::msg::Point object_initial_position;
 
   void setup_joint_value_target(float angle0, float angle1, float angle2,
                                 float angle3, float angle4, float angle5) {
@@ -299,13 +324,23 @@ private:
     }
   }
 
+  // setup the goal pose target
   void go_to_pregrasp_position() {
 
     RCLCPP_INFO(LOGGER, "Going to Pregrasp Position...");
-    // setup the goal pose target
-    // Best coordinates for pregrasp, adjusted through Gazebo and RVIZ
-    setup_goal_pose_target(+0.3385, -0.020, +0.250, -1.000, 0.000, 0.000,
-                           0.000);
+    RCLCPP_INFO(LOGGER,
+                "In pregrasp function, here is the Detected object pose is : "
+                "%f , %f , %f",
+                object_initial_position.x, object_initial_position.y,
+                object_initial_position.z);
+    // Place the gripper at z_offset from the object
+    double z_offset = 0.22;
+    double y_offset = -0.01;
+    double x_offset = 0.0105;
+    setup_goal_pose_target(object_initial_position.x + x_offset,
+                           object_initial_position.y + y_offset,
+                           object_initial_position.z + z_offset, -1.000, 0.000,
+                           0.000, 0.000);
 
     // plan and execute the trajectory
     plan_trajectory_kinematics();
@@ -403,8 +438,28 @@ private:
 
   // Detected object position subscriber callback
   // returns the object's position in reference to the base_link of the arm
-  void topic_callback(const DetectedObjects::SharedPtr msg) const {
-    RCLCPP_INFO(LOGGER, "IT IS WORKING!!!");
+  void topic_callback(const DetectedObjects::SharedPtr msg) {
+    RCLCPP_INFO(LOGGER, "Looking for any detected objects...");
+
+    // If an object or more were detected
+    // Make sure that the object is as tall as the cube to be grasped
+    if (msg != nullptr && msg->thickness > 0.04) {
+
+      object_initial_position.x = msg->position.x;
+      object_initial_position.y = msg->position.y;
+      object_initial_position.z = msg->position.z;
+
+      RCLCPP_INFO(
+          LOGGER,
+          "In topic callback, the Detected object pose is : %f , %f , %f",
+          object_initial_position.x, object_initial_position.y,
+          object_initial_position.z);
+
+      object_pose_promise_.set_value(*msg); // Fulfilled the promise
+
+      // Then unsubscribe from the topic
+      object_pose_sub.reset();
+    }
   }
 
 }; // class PickAndPlaceTrajectory
