@@ -36,6 +36,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 install(PROGRAMS
   scripts/static_tf_publisher.py
   scripts/objects_detection.py
+  scripts/static_tf_publisher_real.py
+  scripts/objects_detection_real.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
